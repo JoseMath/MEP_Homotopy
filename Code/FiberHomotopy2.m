@@ -115,7 +115,7 @@ if nargin == 1 % Structured method
         Jac = [JacH;CBlock;zeros(ik,sumn),JacL];
 
 
-        % Eulor step
+        % Euler step
 
         % StopByNumberofNewton = [];
         % NumberofTotalOuterloop = 0;

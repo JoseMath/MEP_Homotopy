@@ -1,0 +1,10 @@
+k=2 % Number of parameters
+theN=[3,3] %Dimension of MEP
+assert(length(theN)==k)  
+
+%%
+A=cell(theK,theK+1)
+for i = 1:k
+    A{i,1}=0;
+
+

@@ -19,11 +19,14 @@
 	Example:
 	% Randomly generated system with k = 3, n1=n2=n3 = 5 (can just copy paste the code to try it)
 	k = 3;
-	ni = 5;
+	ni = 3;
 	n = ni*ones(1,k);
+    m=2*ones(1,k)
 	Amatrix = rands(k*ni,(k+1)*ni)+1i*randn(k*ni,(k+1)*ni);
 	A = mat2cell(Amatrix,n,ni*ones(1,k+1));
- 
+ FiberHomotopy(A,n)
+ FiberHomotopy(A,m)
+
   	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A); % naive method with default number of Newton iteration in the last step
 	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A,50); % naive method with 50 Newton iteration in the last step (recommended; the default number is usually not the best one)
 	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A,50,1); % structured method with 50 Newton iteration in the last step

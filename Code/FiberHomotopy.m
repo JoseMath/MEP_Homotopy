@@ -1,18 +1,31 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A,varargin)
-% the input A should be a k by (k+1) cell array which contains all the
-% matrix coefficients
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A,m)
+% input A is a k by (k+1) cell array which contains all the matrix
+% coefficients of the MEP
 
-% to get the number of parameters k, and the dimensions n=(n1,...,nk)
+%% debugDisp is set to 1 when debugging
+debugDisp = 1;
+
+%% Set the number of eigenparameters and dimensions.
+% k is the number of eigenparameters 
 k = size(A,1);
+% n is the extrinsic dimension
 n = 1:k;
 for i = 1:k
     n(i) = size(A{i,1},1);
 end
 sumn = sum(n);
-EndpointN = k*(max(n)+5);
-EndpointN = max(20,EndpointN);
-method = 0;
+% m is the intrinsic dimension
+if debugDisp==1
+    disp(k);
+    disp(n);
+    disp(m);
+end
+%% EndpointN is the number of Newton iterations at the endpoint. 
+%EndpointN = k*(max(n)+5);
+%EndpointN = max(20,EndpointN);
+EndpointN=5;
 
+%% UG, RG, UL, RL are Jacobians
 % get UG, RG, UL, RL --> JacG, JacL, Lc
 ik = (k-1)*k;
 UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
@@ -53,25 +66,36 @@ for i = 1:k
         GB = GB + A{i,j+1}*nCell{i}(j);
     end
     
-    % option 2: without the for loop; should compare the speed later
-    % MC = cell2mat(A{i,2:(k+1)});
-    % GA = GA - MC*kron(s(((i-1)*k+1):i*k),eye(n(i)));
-    % GB = GB + MC*kron(n(((i-1)*k+1):i*k),eye(n(i)));
     [V,D] = eig(GA,GB);
+
+% Pick out correct number of eigenvalues
+    disp(size(V));
+    disp(size(D));
+    [sortedValues,sortIndex]=sort(abs(diag(D)),'ascend');
+    minIndex = sortIndex(1:m(i));
+    D=D(:,minIndex);
+    V=V(:,minIndex);
+if debugDisp==1 
+    disp(size(V));
+    disp(size(D));
+end
     ScaleEigenVector = C{i}*V;
     V = V./repmat(ScaleEigenVector,n(i),1);
-    SEigenVector{i} = V;   % n(i) by n(i) square matrix
+    SEigenVector{i} = V;   % n(i) by m(i) square matrix
     SEigenValue{i} = diag(D);
+
+
+
 end
 
 S = cell(2*k,1);
 % loop over all possible paths
 loop = cell(k,1);
 for i = 1:k
-    loop{i} = 1:n(i);
+    loop{i} = 1:m(i);
 end
 Loop = allcomb(loop{:})';
-pn = prod(n);
+pn = prod(m);
 
 hmax = 10^-2;
 hmin = 10^-6;
@@ -87,244 +111,15 @@ TimeEachPath = 1:pn;
 LastNewton = 1:pn;
 index = 1;
 
-numvarargs = length(varargin);
-if numvarargs == 2
-    [EndpointN,method] = varargin{:};
-elseif numvarargs == 1
-    EndpointN = varargin{:};
-end
 
-if method == 1 % Structured method
+% Naive Method
     for path = Loop
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
             S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i};
         end
+
         
-        t = 0;
-        h = hmax;
-
-        [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-        JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
-        Jac = [JacH;CBlock;zeros(ik,sumn),JacL];
-
-
-        % Eulor step
-
-        % StopByNumberofNewton = [];
-        % NumberofTotalOuterloop = 0;
-    
-
-    %if nargin == 1
-        tic;
-        while t <= 1 - h
-            vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
-
-            DeltaEulorStep = Jac\(-vEulor); 
-
-            % update S and t
-            S = mat2cell(cell2mat(S) + h*DeltaEulorStep,[n,k*ones(1,k)],1);
-            t = t + h;
-
-            [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-            JacM = (1-t)*JacL+t*JacG;
-            ML = (1-t)*Lc;
-            NumberNewton = 1;
-
-            % Newton step
-            % Naive way
-            RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
-            
-            
-            Decomp = cell(1,k);
-                for i = 1:k
-                    Decomp{i} = inverse(JacTL{i});
-                end
-                Constraints = cell(1,k);
-                for i = 1:k
-                    Cons = Decomp{i}*JacTR{i};
-                    Constraints{i} = -C{i}*Cons;
-                end
-                J = [JacM;blkdiag(Constraints{:})];
-                DeltaNewtonLambda = J\[-RJacM;Eterm];
-                DeltaNewtonLambda = mat2cell(DeltaNewtonLambda,k*ones(1,k),1);
-                maxDelta = 0;
-                for i = 1:k
-                    Rside = JacTR{i}*DeltaNewtonLambda{i};
-                    Delta = -Decomp{i}*Rside - S{i};
-                    maxDelta = max(maxDelta,norm(Delta,inf));
-                    S{i} = S{i} + Delta;
-                end
-                for i = 1:k
-                    maxDelta = max(maxDelta,norm(DeltaNewtonLambda{i},inf));
-                    S{i+k} = S{i+k}+DeltaNewtonLambda{i};
-                end
-
-                [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-                RJacM = JacM*cell2mat(S((k+1):2*k))-ML;
-                
-            
-            while NumberNewton < 7 && maxDelta >= 10^-6
-
-    %         structured method
-                Decomp = cell(1,k);
-                for i = 1:k
-                    Decomp{i} = inverse(JacTL{i});
-                end
-                Constraints = cell(1,k);
-                for i = 1:k
-                    Cons = Decomp{i}*JacTR{i};
-                    Constraints{i} = -C{i}*Cons;
-                end
-                J = [JacM;blkdiag(Constraints{:})];
-                flag = decomposition(J);
-                %if rcond(J) < eps
-                if isIllConditioned(flag)
-                  break
-                end
-                DeltaNewtonLambda = flag\[-RJacM;Eterm];
-                DeltaNewtonLambda = mat2cell(DeltaNewtonLambda,k*ones(1,k),1);
-                maxDelta = 0;
-                for i = 1:k
-                    Rside = JacTR{i}*DeltaNewtonLambda{i};
-                    Delta = -Decomp{i}*Rside - S{i};
-                    maxDelta = max(maxDelta,norm(Delta,inf));
-                    S{i} = S{i} + Delta;
-                end
-                for i = 1:k
-                    maxDelta = max(maxDelta,norm(DeltaNewtonLambda{i},inf));
-                    S{i+k} = S{i+k}+DeltaNewtonLambda{i};
-                end
-
-                [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-                RJacM = JacM*cell2mat(S((k+1):2*k))-ML;
-                NumberNewton = NumberNewton + 1;
-            end
-
-%             
-            if NumberNewton <= 2 && h <= hmax/2
-                h = h*2;
-            else
-                if NumberNewton == 7 && h >= hmin*2
-                    h = h/2;
-                end
-            end
-%         NumberofTotalOuterloop = NumberofTotalOuterloop + 1;
-            JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
-            Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
-        end
-    
-    
-    
-    
-    
-    %     % one more step when t gets larger than 1
-        if t < 1
-            JacM = (1-t)*JacL+t*JacG;
-            Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
-            vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
-
-            DeltaEulorStep = Jac\(-vEulor); % "-" or not?
-
-            % update S and t
-            h = 1 - t;
-            S = mat2cell(cell2mat(S) + h*DeltaEulorStep,[n,k*ones(1,k)],1);
-
-            [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-            JacM = JacG;
-            ML = 0;
-            NumberNewton = 1;
-
-            % Newton step
-            % Naive way
-            RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
-            
-            
-            Decomp = cell(1,k);
-                for i = 1:k
-                    Decomp{i} = inverse(JacTL{i});
-                end
-                Constraints = cell(1,k);
-                for i = 1:k
-                    Cons = Decomp{i}*JacTR{i};
-                    Constraints{i} = -C{i}*Cons;
-                end
-                J = [JacM;blkdiag(Constraints{:})];
-                flag = decomposition(J);
-                if ~isIllConditioned(flag)
-                    DeltaNewtonLambda = flag\[-RJacM;Eterm];
-                    DeltaNewtonLambda = mat2cell(DeltaNewtonLambda,k*ones(1,k),1);
-                    maxDelta = 0;
-                    for i = 1:k
-                        Rside = JacTR{i}*DeltaNewtonLambda{i};
-                        Delta = -Decomp{i}*Rside - S{i};
-                        maxDelta = max(maxDelta,norm(Delta,inf));
-                        S{i} = S{i} + Delta;
-                    end
-                    for i = 1:k
-                        maxDelta = max(maxDelta,norm(DeltaNewtonLambda{i},inf));
-                        S{i+k} = S{i+k}+DeltaNewtonLambda{i};
-                    end
-
-                    [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-                    RJacM = JacM*cell2mat(S((k+1):2*k))-ML;
-
-
-                    while NumberNewton < EndpointN && maxDelta >= 10^-9
-   
-            %         structured method
-                        Decomp = cell(1,k);
-                        for i = 1:k
-                            Decomp{i} = inverse(JacTL{i});
-                        end
-                        Constraints = cell(1,k);
-                        for i = 1:k
-                            Cons = Decomp{i}*JacTR{i};
-                            Constraints{i} = -C{i}*Cons;
-                        end
-                        J = [JacM;blkdiag(Constraints{:})];
-                        flag = decomposition(J);
-                        % if rcond(J) < eps
-                        if isIllConditioned(flag) 
-                          break
-                        end
-                        DeltaNewtonLambda = flag\[-RJacM;Eterm];
-                        DeltaNewtonLambda = mat2cell(DeltaNewtonLambda,k*ones(1,k),1);
-                        maxDelta = 0;
-                        for i = 1:k
-                            Rside = JacTR{i}*DeltaNewtonLambda{i};
-                            Delta = -Decomp{i}*Rside - S{i};
-                            maxDelta = max(maxDelta,norm(Delta,inf));
-                            S{i} = S{i} + Delta;
-                        end
-                        for i = 1:k
-                            maxDelta = max(maxDelta,norm(DeltaNewtonLambda{i},inf));
-                            S{i+k} = S{i+k}+DeltaNewtonLambda{i};
-                        end
-
-                        [JacTL,JacTR] = EvaluateHi(k,A,S,n);
-                        RJacM = JacM*cell2mat(S((k+1):2*k))-ML;
-                        NumberNewton = NumberNewton + 1;
-                    end
-                end
-        end
-        TimeEachPath(index) = toc;
-        
-        % save results
-        for vg = 1:k
-            EigenVector{index,vg} = S{vg};
-            EigenValue{index,vg} = S{k+vg};
-        end
-        index = index + 1;
-    end
-    
-    
-else  % Naive Method
-    for path = Loop
-        for i = 1:k
-            S{i} = SEigenVector{i}(:,path(i));
-            S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i};
-        end
         
         t = 0;
         h = hmax;
@@ -439,6 +234,5 @@ else  % Naive Method
         end
         index = index + 1;
     end  
-end
 
 end

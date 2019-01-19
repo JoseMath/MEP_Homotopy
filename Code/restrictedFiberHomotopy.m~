@@ -1,6 +1,14 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A,m)
-% input A is a k by (k+1) cell array which contains all the matrix
-% coefficients of the MEP
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A,rf)
+% A, k by (k+1) cell array containing all the matrix coefficients
+% rf, a function that restricts the paths we track based on the eigenvalues
+
+%% rf(eigvalues)->[list of positions where we keep the eigenvalues] 
+% 'instrinsic', m; return the m eigenvalues with smalleset abs .
+% 'intrinsic', tol; return eigenvalues with absolute value < tol.
+% 'distinct', tol1,tol2; return eigenvalues that have no multiplicity by tol1 and abs less than tol2
+% 'toric', tol1,tol2; return eigenvalues with  tol1 <abs<tol2
+
+%%
 
 %% debugDisp is set to 1 when debugging
 debugDisp = 1;
@@ -50,6 +58,7 @@ CBlockDiag = blkdiag(C{:});
 SEigenVector = cell(k,1);
 SEigenValue = cell(k,1);
 s = UL\ones(ik,1);   % k^2 by 1 specific solution
+%toric case: s = UL\zeros(ik,1);
 nCell = cell(k,1);
 for i = 1:k
     nCell{i} = null(R{i});

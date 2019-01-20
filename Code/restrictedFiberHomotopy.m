@@ -1,13 +1,7 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,varargin)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,instrinsicDimension,m,maxAbsBound,tolMax,distinctBound,tolDistinct,toric,tolToric)
 % A, k by (k+1) cell array containing all the matrix coefficients
-% rf, a function that restricts the paths we track based on the eigenvalues
 
-%% rf(eigvalues)->[list of positions where we keep the eigenvalues] 
-% 'instrinsicDimension', m; return the m eigenvalues with smalleset abs .
-% 'maxAbsBound', tol; return eigenvalues with absolute value < tol.
-% 'minMinBound', tol; return eigenvalues with absolute value < tol.
-% 'distinctBound', tol; return eigenvalues that no closer than tol
-% 'toric', tol1,tol2; return eigenvalues with  tol1 <abs<tol2
+
 %%
 
 %% debugDisp is set to 1 when debugging
@@ -73,13 +67,33 @@ for i = 1:k
     for j = 1:k
         GA = GA - A{i,j+1}*sCell{i}(j);
         GB = GB + A{i,j+1}*nCell{i}(j);
-    end
-    
+    end        
+%% Solve GEP    
     [V,D] = eig(GA,GB);
+    
+%% instrinsicDimension,m,
 
-% Pick out correct number of eigenvalues
-    disp(size(V));
-    disp(size(D));
+%% maxAbsBound,tolMax,
+    %positionTolMax=(positions,tolMax)->
+    newPositions=[];
+    for i=positions
+        if D(i,i)<tolMax 
+            newPositions=[newPositions,i]
+        end
+    end
+    positions=positionTolMax(positions,tolMax)
+        
+        
+    end
+%% distinctBound,tolDistinct,
+
+%% toric,tolToric
+
+
+%%
+    positions=[1:n(i)];
+%% Pick out correct number of eigenvalues
+
     [sortedValues,sortIndex]=sort(abs(diag(D)),'ascend');
     minIndex = sortIndex(1:m(i));
     D=D(:,minIndex);
@@ -88,13 +102,14 @@ if debugDisp==1
     disp(size(V));
     disp(size(D));
 end
+%%
+
     ScaleEigenVector = C{i}*V;
     V = V./repmat(ScaleEigenVector,n(i),1);
     SEigenVector{i} = V;   % n(i) by m(i) square matrix
     SEigenValue{i} = diag(D);
-
-
-
+%% Let's see if this has any zeros.
+    %nCell{i}*SEigenValue{i}(path(i))+sCell{i}
 end
 
 S = cell(2*k,1);
@@ -125,7 +140,7 @@ index = 1;
     for path = Loop
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
-            S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i};
+            S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i}; %%Jose: Is this the eigenvalues?
         end
 
         t = 0;

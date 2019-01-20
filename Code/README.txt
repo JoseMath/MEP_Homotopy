@@ -27,6 +27,7 @@
  FiberHomotopy(A,n)
  FiberHomotopy(A,m)
 
+restrictedFiberHomotopy(A,m,1000,.00001,1)
   	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A); % naive method with default number of Newton iteration in the last step
 	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A,50); % naive method with 50 Newton iteration in the last step (recommended; the default number is usually not the best one)
 	[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,NewtonIteration] = FiberHomotopy(A,50,1); % structured method with 50 Newton iteration in the last step

@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,instrinsicDimensionBound,m,maxAbsBound,tolMax,distinctBound,tolDistinct,toric,tolToric)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,m,tolMax,tolDistinct,tolToric)
 % A, k by (k+1) cell array containing all the matrix coefficients
 
 
@@ -29,7 +29,8 @@ EndpointN=5;
 
 %% UG, RG, UL, RL are Jacobians
 % get UG, RG, UL, RL --> JacG, JacL, Lc
-ik = (k-1)*k;
+ik = (k-1)*k;  %%ik is the number of linear equations. 
+%% We go from L to G. U is the system and R is to randomize. 
 UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
 RG = randn(ik)+1i*randn(ik);
 % [RG,~,~] = svd(RG); 
@@ -40,8 +41,9 @@ RL = randn(ik)+1i*randn(ik);
 JacG = RG*UG;
 JacL = RL*UL;
 
-Lc = RL*ones(ik,1);
-Newtoniteration = 0;
+Lc = RL*ones(ik,1);  %% constant terms . 
+%This counts the number of Newton iterations
+Newtoniteration = 0;  
 
 % linear constraints on eigenvectors, i.e, c1,...ck
 C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
@@ -52,14 +54,20 @@ CBlockDiag = blkdiag(C{:});
 SEigenVector = cell(k,1);
 SEigenValue = cell(k,1);
 s = UL\ones(ik,1);   % k^2 by 1 specific solution
-%toric case: s = UL\zeros(ik,1);
+
 nCell = cell(k,1);
 for i = 1:k
     nCell{i} = null(R{i});
 end
 sCell = mat2cell(s,k*ones(1,k),1);
 
+%% S is for solutions (eigenvectors,eigenvalues)
+S = cell(2*k,1);
+% loop over all possible paths
+loop = cell(k,1);
 
+
+%% Lam=(lambda_1,...,lambda_k)=(sCell+T*nCell) T are eigenvalues of the GEP   
 for i = 1:k
     GA = A{i,1};
     GB = 0;
@@ -69,54 +77,60 @@ for i = 1:k
         GB = GB + A{i,j+1}*nCell{i}(j);
     end        
 %% Solve GEP    
-    [V,D] = eig(GA,GB);
-    
-
+    [V,D] = eig(GA,GB);   
+    positions=[1:size(D,1)]; % size(D,1)= n_i   
+    E=diag(D);
+%% instrinsicDimensionBound=m,
+    disp(abs(E));
+    [sortedValues,sortIndex]=sort(abs(E),'ascend');    
+    disp(sortIndex);
+    positions = sortIndex(1:m(i));
 %% maxAbsBound,tolMax,
-    %positionTolMax=(positions,E,tolMax)->
     newPositions=[];
-    for i=positions
-        if E(i)<tolMax 
-            newPositions=[newPositions,i]
+    for p=positions
+        if E(p)<tolMax 
+            newPositions=[newPositions,p];
         end
     end
-    positions=positionTolMax(positions,tolMax)
-%% instrinsicDimensionBound,m,
-    positionIntrinsicDimension=(positions,E,mInteger)->
-    [sortedValues,sortIndex]=sort(abs(E),'ascend');    
-    positions = sortIndex(1:min(mInteger,length(b)));
-
-    
+    positions=newPositions;    
 %% distinctBound,tolDistinct,
-    %positionTolDistinct=(positions,E,tolDistinct)->
     newPositions=[];
-    for i=1:length(positions)-1
+    for p=1:length(positions)-1
         includePosition=true;
-        for j=i+1:length(positions)
-            if abs(E(positions(i))-E(positions(j)))<tolDistinct
+        for j=p+1:length(positions)
+            if abs(E(positions(p))-E(positions(j)))<tolDistinct
                 includePosition=false;
                 break 
             end
         end        
         if includePosition
-            newPosition=[newPosition,position(i)]
+            newPositions=[newPositions,positions(p)]
         end
-    end 
+    end
+    positions=newPositions;
 %% toric,tolToric
+%% Lam=(lambda_1,...,lambda_k)=(sCell+T*nCell) T are eigenvalues of the GEP   
+  newPositions=[];
+  for p=positions
+      Lam=sCell{i}+E(p)*nCell{i};
+      isNew=true;
+      for j=Lam
+          if abs(j)<tolToric
+              isNew=false;
+              break
+          end
+      end
+      if isNew 
+          newPositions=[newPositions,p];
+      end
+  end
+  positions=newPositions        
+  
 
-
-%%
-    positions=[1:n(i)];
-%% Pick out correct number of eigenvalues
-
-    [sortedValues,sortIndex]=sort(abs(diag(D)),'ascend');
-    minIndex = sortIndex(1:m(i));
-    D=D(:,minIndex);
-    V=V(:,minIndex);
-if debugDisp==1 
-    disp(size(V));
-    disp(size(D));
-end
+%% Pick out correct eigenvalues and vectors
+    D=D(:,positions);
+    V=V(:,positions);
+    loop{i} = 1:length(positions);
 %%
 
     ScaleEigenVector = C{i}*V;
@@ -127,12 +141,7 @@ end
     %nCell{i}*SEigenValue{i}(path(i))+sCell{i}
 end
 
-S = cell(2*k,1);
-% loop over all possible paths
-loop = cell(k,1);
-for i = 1:k
-    loop{i} = 1:m(i);
-end
+
 Loop = allcomb(loop{:})';
 pn = prod(m);
 
@@ -155,7 +164,7 @@ index = 1;
     for path = Loop
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
-            S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i}; %%Jose: Is this the eigenvalues?
+            S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i}; 
         end
 
         t = 0;

@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,instrinsicDimension,m,maxAbsBound,tolMax,distinctBound,tolDistinct,toric,tolToric)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,instrinsicDimensionBound,m,maxAbsBound,tolMax,distinctBound,tolDistinct,toric,tolToric)
 % A, k by (k+1) cell array containing all the matrix coefficients
 
 
@@ -71,22 +71,37 @@ for i = 1:k
 %% Solve GEP    
     [V,D] = eig(GA,GB);
     
-%% instrinsicDimension,m,
 
 %% maxAbsBound,tolMax,
-    %positionTolMax=(positions,tolMax)->
+    %positionTolMax=(positions,E,tolMax)->
     newPositions=[];
     for i=positions
-        if D(i,i)<tolMax 
+        if E(i)<tolMax 
             newPositions=[newPositions,i]
         end
     end
-    positions=positionTolMax()
-        
-        
-    end
-%% distinctBound,tolDistinct,
+    positions=positionTolMax(positions,tolMax)
+%% instrinsicDimensionBound,m,
+    positionIntrinsicDimension=(positions,E,mInteger)->
+    [sortedValues,sortIndex]=sort(abs(E),'ascend');    
+    positions = sortIndex(1:min(mInteger,length(b)));
 
+    
+%% distinctBound,tolDistinct,
+    %positionTolDistinct=(positions,E,tolDistinct)->
+    newPositions=[];
+    for i=1:length(positions)-1
+        includePosition=true;
+        for j=i+1:length(positions)
+            if abs(E(positions(i))-E(positions(j)))<tolDistinct
+                includePosition=false;
+                break 
+            end
+        end        
+        if includePosition
+            newPosition=[newPosition,position(i)]
+        end
+    end 
 %% toric,tolToric
 
 

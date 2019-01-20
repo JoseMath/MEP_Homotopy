@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,instrinsicDimension,m,maxAbsBound,tolMax,distinctBound,tolDistinct,toric,tolToric)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,m,maxAbsBound,tolMax,tolDistinct,tolToric)
 % A, k by (k+1) cell array containing all the matrix coefficients
 
 
@@ -52,7 +52,7 @@ CBlockDiag = blkdiag(C{:});
 SEigenVector = cell(k,1);
 SEigenValue = cell(k,1);
 s = UL\ones(ik,1);   % k^2 by 1 specific solution
-%toric case: s = UL\zeros(ik,1);
+
 nCell = cell(k,1);
 for i = 1:k
     nCell{i} = null(R{i});
@@ -71,22 +71,37 @@ for i = 1:k
 %% Solve GEP    
     [V,D] = eig(GA,GB);
     
-%% instrinsicDimension,m,
 
 %% maxAbsBound,tolMax,
-    %positionTolMax=(positions,tolMax)->
+    %positionTolMax=(positions,E,tolMax)->
     newPositions=[];
     for i=positions
-        if D(i,i)<tolMax 
+        if E(i)<tolMax 
             newPositions=[newPositions,i]
         end
     end
     positions=positionTolMax(positions,tolMax)
-        
-        
-    end
-%% distinctBound,tolDistinct,
+%% instrinsicDimensionBound,m,
+    positionIntrinsicDimension=(positions,E,mInteger)->
+    [sortedValues,sortIndex]=sort(abs(E),'ascend');    
+    positions = sortIndex(1:min(mInteger,length(b)));
 
+    
+%% distinctBound,tolDistinct,
+    %positionTolDistinct=(positions,E,tolDistinct)->
+    newPositions=[];
+    for i=1:length(positions)-1
+        includePosition=true;
+        for j=i+1:length(positions)
+            if abs(E(positions(i))-E(positions(j)))<tolDistinct
+                includePosition=false;
+                break 
+            end
+        end        
+        if includePosition
+            newPosition=[newPosition,position(i)]
+        end
+    end 
 %% toric,tolToric
 
 

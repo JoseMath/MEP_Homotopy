@@ -78,7 +78,7 @@ newMultiparameterEigenvalueProblem(List,List,String):= o->(n,d,type)->(
     then(
 	scan(#n,i->mepH#("L"|i+1)=randomCCMatrix(#n-1,#n));
 	mepH#("G")=randomCCMatrix((#n)^2-#n,(#n)^2-#n);
-	scan(#n,i->mepH#("H"|i+1)=apply(#n+1,j->randomCCMatrix(n_i,1+n_i))));
+	scan(#n,i->mepH#("H"|i+1)=apply(#n+1,j->randomCCMatrix(n_i,n_i))));
     if type==TypeEmpty 
     then(
 	scan(#n,i->mepH#("L"|i+1)=null);
@@ -86,20 +86,47 @@ newMultiparameterEigenvalueProblem(List,List,String):= o->(n,d,type)->(
 	scan(#n,i->mepH#("H"|i+1)=null));
     return mepH)
 
-newMultiparameterEigenvalueProblem=method()
-newMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem):=(mepH)->(
+writeMultiparameterEigenvalueProblem=method()
+writeMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem):=(mepH)->(
+    print mepH#Directory;
     if not (mepH#?"H1") then error" H1 is not a key. ";
     kk:=(first mepH#"H1")_(0,0)//ring;
     kParameters:=#mepH#ExtrinsicDimension;
     R:=kk[lam_0..lam_kParameters];
-    scan(kParameters,
-	i->oneH:=0; scan(gens R,mepH|"H"|i,(l,A)->oneH=oneH+l*A))
-    R:=QQ[]
-    )
+    print 1;
+    scan(kParameters,i->(
+	    xv:=apply(mepH#ExtrinsicDimension#i,j->"x"|j+1);
+    	    print xv;
+	    oneH:=0; 
+	    scan(gens R,mepH#("H"|i+1),(l,A)->oneH=oneH+l*sub(A,R));
+	    print (numrows oneH,numcols oneH,oneH);
+	    bp1:=apply(entries oneH,r->makeB'Section(r,B'NumberCoefficients=>xv));
+    	    bp0:=apply(entries mepH#("L"|i+1),r->makeB'Section(r,B'NumberCoefficients=>gens R));		
+	    makeB'InputFile(mepH#Directory,NameB'InputFile=>"input_start"|i+1,
+		B'Polynomials=>bp0|bp1,
+		HomVariableGroup=>{xv},
+		AffVariableGroup=>{drop(gens R,1)},
+		B'Constants=>{toString first gens R=>1},
+		B'Configs=>{"PrintPathProgress"=>100})		
+		)));
+runStartMultiparameterEigenvalueProblem=method()
+runStartMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem,ZZ):=(mepH,s)->(
+    runBertini(mepH#Directory,NameB'InputFile=>"input_start"|s);
+    moveB'File(mepH#Directory,"nonsingular_solutions","start"|s))
+runStartMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem):=(mepH)->scan(#mepH#ExtrinsicDimension,i->runStartMultiparameterEigenvalueProblem(mepH,i+1))
+
+--writeStartFiberProductHomotopy
+
+
+
+
+
+
+
 mepH=newMultiparameterEigenvalueProblem({4,5},{2,2},"GenericExtrinsic")    
-mep1=newMultiparameterEigenvalueProblem({2,2},{2,2},"")    
- mep1#"H1"
-peek mep1 
+writeMultiparameterEigenvalueProblem(mepH)
+runStartMultiparameterEigenvalueProblem(mepH)
+
  
 --##########################################################################--
 -- INTERNAL METHODS

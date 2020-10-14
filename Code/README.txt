@@ -1,12 +1,11 @@
 # FiberHomotopy.m
 # The main function
-	Inputs: 
+	Inputs:
 	# A: k by (k+1) cell array containing all matrix coefficients
-	# (optional) Number of Newton iteration in the last step: the default value is k*(max(n)+5)
-	# (optional) Method: 1 — structured method, 0 — naive method (default)
-	
+	# m: the intrinsic dimension
+
 	Outputs:
-	# EigenValue: n1*…*nk by k cell, where each column is a lambda variable group  
+	# EigenValue: n1*…*nk by k cell, where each column is a lambda variable group
 	# EigenVector:  n1*…*nk by k cell, where each row is an eigenvector solution (x1,…,xk)
 	# SEigenValue: eigenvalues of the start system (the k GEPs)
 	# SEigenVector: eigenvectors of the start system (the k GEPs)
@@ -21,7 +20,7 @@
 	k = 3;
 	ni = 3;
 	n = ni*ones(1,k);
-    m=2*ones(1,k)
+    	m = 2*ones(1,k);
 	Amatrix = rands(k*ni,(k+1)*ni)+1i*randn(k*ni,(k+1)*ni);
 	A = mat2cell(Amatrix,n,ni*ones(1,k+1));
  FiberHomotopy(A,n)
@@ -42,8 +41,8 @@
     G2=rands(k,k);
     G={G1,G2}
     writeBertiniInput(Str1,Str2,A,L,G)
- 
-%% Flutter 
+
+%% Flutter
     coefA=[P,-Q,-R;conj(P),-conj(Q),-conj(R)]
 	A = mat2cell(coefA,20*ones(1,2),20*ones(1,2+1))
     m=[12,12]
@@ -75,18 +74,3 @@
 
 	# Example:
 	RBE = BackwardError(EigenValue,EigenVector,A);
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-

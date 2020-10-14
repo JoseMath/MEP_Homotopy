@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = restrictedFiberHomotopy(A,m,tolMax,tolDistinct,tolToric)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration,LastTValue] = restrictedFiberHomotopy(A,m,tolMax,tolDistinct,tolToric)
 % A, k by (k+1) cell array containing all the matrix coefficients
 
 
@@ -17,11 +17,11 @@ for i = 1:k
 end
 sumn = sum(n);
 % m is the intrinsic dimension
-if debugDisp==1
+
     disp(k);
     disp(n);
     disp(m);
-end
+
 %% EndpointN is the number of Newton iterations at the endpoint. 
 %EndpointN = k*(max(n)+5);
 %EndpointN = max(20,EndpointN);
@@ -42,8 +42,6 @@ JacG = RG*UG;
 JacL = RL*UL;
 
 Lc = RL*ones(ik,1);  %% constant terms . 
-%This counts the number of Newton iterations
-Newtoniteration = 0;  
 
 % linear constraints on eigenvectors, i.e, c1,...ck
 C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
@@ -79,23 +77,35 @@ for i = 1:k
 %% Solve GEP    
     [V,D] = eig(GA,GB);   
     positions=[1:size(D,1)]; % size(D,1)= n_i   
+    disp('positions1');
+    disp(positions);
     E=diag(D);
 %% instrinsicDimensionBound=m,
-    disp(abs(E));
+%    disp(abs(E));
     [sortedValues,sortIndex]=sort(abs(E),'ascend');    
-    disp(sortIndex);
-    positions = sortIndex(1:m(i));
+%    disp(sortIndex);
+    positions = (sortIndex(1:m(i)))';
+    disp('positionsPostIDB');
+    disp(length(positions));
+
 %% maxAbsBound,tolMax,
     newPositions=[];
+    disp(E);
+    disp('positionsGO')
+    disp(size(E))
+    disp(positions);
     for p=positions
-        if E(p)<tolMax 
+        disp(E(p));
+        if abs(E(p))<tolMax 
             newPositions=[newPositions,p];
         end
     end
     positions=newPositions;    
-%% distinctBound,tolDistinct,
+    disp('positionsPostMax');
+    disp(length(positions));
+    %% distinctBound,tolDistinct,
     newPositions=[];
-    for p=1:length(positions)-1
+    for p=1:length(positions)
         includePosition=true;
         for j=p+1:length(positions)
             if abs(E(positions(p))-E(positions(j)))<tolDistinct
@@ -104,11 +114,13 @@ for i = 1:k
             end
         end        
         if includePosition
-            newPositions=[newPositions,positions(p)]
+            newPositions=[newPositions,positions(p)];
         end
     end
     positions=newPositions;
-%% toric,tolToric
+    disp('positionsPostDistinct');
+    disp(length(positions));
+    %% toric,tolToric
 %% Lam=(lambda_1,...,lambda_k)=(sCell+T*nCell) T are eigenvalues of the GEP   
   newPositions=[];
   for p=positions
@@ -125,8 +137,8 @@ for i = 1:k
       end
   end
   positions=newPositions        
-  
-
+    disp('positionsPostToric');
+    disp(length(positions));
 %% Pick out correct eigenvalues and vectors
     D=D(:,positions);
     V=V(:,positions);
@@ -138,12 +150,14 @@ for i = 1:k
 %% Let's see if this has any zeros.
     %nCell{i}*SEigenValue{i}(path(i))+sCell{i}
 end
+disp('loop');
 disp(loop);
 
 Loop = allcomb(loop{:})';
 %pn = prod(m);
-pn=size(Loop,1)
-
+disp(size(Loop));
+pn=size(Loop,2);
+disp(pn);
 hmax = 10^-2;
 hmin = 10^-6;
 
@@ -154,12 +168,16 @@ JD = -JacL+JacG;
 EigenValue = cell(pn,k);
 EigenVector = cell(pn,k);
 
+LastTValue = zeros(1,pn);
 TimeEachPath = 1:pn;
 LastNewton = 1:pn;
+% index the paths
 index = 1;
+% counts the number of Newton iterations
+Newtoniteration = 0;  
 
 
-% Naive Method
+%
     for path = Loop
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
@@ -178,6 +196,10 @@ index = 1;
             vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
 
             DeltaEulorStep = Jac\(-vEulor); % "-" or not?
+            if rcond(Jac)<1e-15  
+                break
+                disp('Jac rcond too small');
+            end;
 
             % update S and t
             S = mat2cell(cell2mat(S) + h*DeltaEulorStep,[n,k*ones(1,k)],1);
@@ -189,7 +211,6 @@ index = 1;
             NumberNewton = 1;
 
             % Newton step
-            % Naive way
             EVector = cell2mat(S(1:k));
             RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;RJacM];
@@ -208,6 +229,10 @@ index = 1;
             while NumberNewton < 150 && norm(DeltaNewtonStep,inf) >= 10^-9
                 JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
                 Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
+                if rcond(Jac)<1e-15  
+                    break
+                    disp('Jac rcond too small');
+                end;
                 DeltaNewtonStep = Jac\(-vNewton);
                 Newtoniteration = Newtoniteration + 1;
                 S = mat2cell(cell2mat(S) + DeltaNewtonStep,[n,k*ones(1,k)],1);
@@ -264,13 +289,14 @@ index = 1;
             end
             LastNewton(index) = NumberNewton;
         end
- 
         TimeEachPath(index) = toc;
         for vg = 1:k
             EigenVector{index,vg} = S{vg};
             EigenValue{index,vg} = S{k+vg};
         end
+        LastTValue(index)=t;
+        disp('Loop Index');
+        disp(index);
         index = index + 1;
     end  
-
 end

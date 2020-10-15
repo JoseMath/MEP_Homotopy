@@ -83,15 +83,6 @@ R = -eye(20);
 R(1:2,1:2) = Z2;
 R(11:12,11:12) = Z2;
 
-% the obtained two-parameter eigenvalue problem is singular and has 
-% multiple chi, therefore we use fast = 0
-opts = [];
-opts.singular = 1; 
-opts.fast = 0; 
-opts.showrank = 1; % display steps of the staircase algorithm 
-opts.rankeps = 1e-8; % the default value (1e-10) is too small for the right detection in the staircase algorithm
-[chi,kappa] = twopareig(P,-Q,-R,conj(P),-conj(Q),-conj(R),opts);
-
 %% The above codes are from MultiParEig with license in the current folder
 
 A = {P,-Q,-R;conj(P),-conj(Q),-conj(R)}

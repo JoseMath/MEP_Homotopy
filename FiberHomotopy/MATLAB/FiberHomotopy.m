@@ -1,118 +1,111 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A,m)
-% input A is a k by (k+1) cell array which contains all the matrix
-% coefficients of the MEP
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A)
+    % input A is a k by (k+1) cell array which contains all the matrix
+    % coefficients of the MEP
 
-%% debugDisp is set to 1 when debugging
-debugDisp = 1;
+    %% debugDisp is set to 1 when debugging
+    debugDisp = 1;
 
-%% Set the number of eigenparameters and dimensions.
-% k is the number of eigenparameters 
-k = size(A,1);
-% n is the extrinsic dimension
-n = 1:k;
-for i = 1:k
-    n(i) = size(A{i,1},1);
-end
-sumn = sum(n);
-% m is the intrinsic dimension
-if debugDisp==1
-    disp(k);
-    disp(n);
-    disp(m);
-end
-%% EndpointN is the number of Newton iterations at the endpoint. 
-%EndpointN = k*(max(n)+5);
-%EndpointN = max(20,EndpointN);
-EndpointN=5;
-
-%% UG, RG, UL, RL are Jacobians
-% get UG, RG, UL, RL --> JacG, JacL, Lc
-ik = (k-1)*k;
-UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
-RG = randn(ik)+1i*randn(ik);
-% [RG,~,~] = svd(RG); 
-R = mat2cell(randn(ik,k)+1i*randn(ik,k),(k-1)*ones(1,k),k);
-UL = blkdiag(R{:});
-RL = randn(ik)+1i*randn(ik);
-% [RL,~,~] = svd(RL); 
-JacG = RG*UG;
-JacL = RL*UL;
-
-Lc = RL*ones(ik,1);
-Newtoniteration = 0;
-
-% linear constraints on eigenvectors, i.e, c1,...ck
-C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
-CBlock = [blkdiag(C{:}),zeros(k,k^2)];
-CBlockDiag = blkdiag(C{:});
-
-% get the solutions for the start system, i.e, solve the GEPs
-SEigenVector = cell(k,1);
-SEigenValue = cell(k,1);
-s = UL\ones(ik,1);   % k^2 by 1 specific solution
-nCell = cell(k,1);
-for i = 1:k
-    nCell{i} = null(R{i});
-end
-sCell = mat2cell(s,k*ones(1,k),1);
-
-
-for i = 1:k
-    GA = A{i,1};
-    GB = 0;
-    %option 1
-    for j = 1:k
-        GA = GA - A{i,j+1}*sCell{i}(j);
-        GB = GB + A{i,j+1}*nCell{i}(j);
+    %% Set the number of eigenparameters and dimensions.
+    % k is the number of eigenparameters 
+    k = size(A,1);
+    % n is the extrinsic dimension
+    n = 1:k;
+    for i = 1:k
+        n(i) = size(A{i,1},1);
     end
-    
-    [V,D] = eig(GA,GB);
+    sumn = sum(n);
 
-% Pick out correct number of eigenvalues
-    disp(size(V));
-    disp(size(D));
-    [sortedValues,sortIndex]=sort(abs(diag(D)),'ascend');
-    minIndex = sortIndex(1:m(i));
-    D=D(:,minIndex);
-    V=V(:,minIndex);
-if debugDisp==1 
-    disp(size(V));
-    disp(size(D));
-end
-    ScaleEigenVector = C{i}*V;
-    V = V./repmat(ScaleEigenVector,n(i),1);
-    SEigenVector{i} = V;   % n(i) by m(i) square matrix
-    SEigenValue{i} = diag(D);
+    if debugDisp==1
+        disp(k);
+        disp(n);
+    end
+
+    %% EndpointN is the number of Newton iterations at the endpoint. 
+    %EndpointN = k*(max(n)+5);
+    %EndpointN = max(20,EndpointN);
+    EndpointN=5;
+
+    %% UG, RG, UL, RL are Jacobians
+    % get UG, RG, UL, RL --> JacG, JacL, Lc
+    ik = (k-1)*k;
+    UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
+    RG = randn(ik)+1i*randn(ik);
+    % [RG,~,~] = svd(RG); 
+    R = mat2cell(randn(ik,k)+1i*randn(ik,k),(k-1)*ones(1,k),k);
+    UL = blkdiag(R{:});
+    RL = randn(ik)+1i*randn(ik);
+    % [RL,~,~] = svd(RL); 
+    JacG = RG*UG;
+    JacL = RL*UL;
+
+    Lc = RL*ones(ik,1);
+    Newtoniteration = 0;
+
+    % linear constraints on eigenvectors, i.e, c1,...ck
+    C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
+    CBlock = [blkdiag(C{:}),zeros(k,k^2)];
+    CBlockDiag = blkdiag(C{:});
+
+    % get the solutions for the start system, i.e, solve the GEPs
+    SEigenVector = cell(k,1);
+    SEigenValue = cell(k,1);
+    s = UL\ones(ik,1);   % k^2 by 1 specific solution
+    nCell = cell(k,1);
+    for i = 1:k
+        nCell{i} = null(R{i});
+    end
+    sCell = mat2cell(s,k*ones(1,k),1);
+
+    m = zeros(size(D));  
+    for i = 1:k
+        GA = A{i,1};
+        GB = 0;
+        %option 1
+        for j = 1:k
+            GA = GA - A{i,j+1}*sCell{i}(j);
+            GB = GB + A{i,j+1}*nCell{i}(j);
+        end
+        
+        [V, D] = extract_intrinsic(GA, GB);
+        m(i) = length(D);
+
+        if debugDisp==1 
+            disp(size(V));
+            disp(size(D));
+        end
+
+        ScaleEigenVector = C{i}*V;
+        V = V./repmat(ScaleEigenVector,n(i),1);
+        SEigenVector{i} = V;   % n(i) by m(i) square matrix
+        SEigenValue{i} = diag(D);
+    end
+
+    S = cell(2*k,1);
+
+    % loop over all possible paths
+    loop = cell(k,1);
+    for i = 1:k
+        loop{i} = 1:m(i);
+    end
+    Loop = allcomb(loop{:})';
+    pn = prod(m);
+
+    hmax = 10^-2;
+    hmin = 10^-6;
+
+    Eterm = ones(k,1);
+    JD = -JacL+JacG;
 
 
+    EigenValue = cell(pn,k);
+    EigenVector = cell(pn,k);
 
-end
-
-S = cell(2*k,1);
-% loop over all possible paths
-loop = cell(k,1);
-for i = 1:k
-    loop{i} = 1:m(i);
-end
-Loop = allcomb(loop{:})';
-pn = prod(m);
-
-hmax = 10^-2;
-hmin = 10^-6;
-
-Eterm = ones(k,1);
-JD = -JacL+JacG;
+    TimeEachPath = 1:pn;
+    LastNewton = 1:pn;
+    index = 1;
 
 
-EigenValue = cell(pn,k);
-EigenVector = cell(pn,k);
-
-TimeEachPath = 1:pn;
-LastNewton = 1:pn;
-index = 1;
-
-
-% Naive Method
+    % Naive Method
     for path = Loop
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));

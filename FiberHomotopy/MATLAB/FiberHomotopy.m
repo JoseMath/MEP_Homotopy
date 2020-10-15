@@ -66,7 +66,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             GB = GB + A{i,j+1}*nCell{i}(j);
         end
         
-        [V, D] = extract_intrinsic(GA, GB);
+        [V, D] = extract_intrinsic_part(GA, GB);
         m(i) = length(D);
 
         if debugDisp==1 
@@ -79,6 +79,8 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         SEigenVector{i} = V;   % n(i) by m(i) square matrix
         SEigenValue{i} = diag(D);
     end
+
+    disp(m)
 
     S = cell(2*k,1);
 

@@ -37,7 +37,7 @@ Sub function; the EvaluateHi function evaluate the Jacobian matrix with the most
 
 
 # RBackwardError.m
-The function that compute the relative backward error
+The function that computes the relative backward error.
 
 ## Inputs: 
 The approximate eigenvalue, eigenvector and coefficient matrices
@@ -46,3 +46,7 @@ The approximate eigenvalue, eigenvector and coefficient matrices
 ```
 	RBE = BackwardError(EigenValue,EigenVector,A);
 ```
+
+# extract_intrinsic_part.m
+
+The function that extracts intrinsic generalized eigenvalues and vectors from a GEP.

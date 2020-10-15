@@ -56,7 +56,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     end
     sCell = mat2cell(s,k*ones(1,k),1);
 
-    m = zeros(size(D));  
+    m = zeros(size(n));  
     for i = 1:k
         GA = A{i,1};
         GB = 0;

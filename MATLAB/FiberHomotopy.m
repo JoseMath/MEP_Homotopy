@@ -25,8 +25,9 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     %EndpointN = max(20,EndpointN);
     EndpointN=5;
 
-    %% UG, RG, UL, RL are Jacobians
-    % get UG, RG, UL, RL --> JacG, JacL, Lc
+    %% Compute JacG, JacL, Lc from randomly generated UG, RG, UL, RL
+    % G_i(lambda_i) = JacG_i * lambda_i
+    % L_i(lambda_i) = JacL_i * lambda_i + Lc_i
     ik = (k-1)*k;
     UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
     RG = randn(ik)+1i*randn(ik);
@@ -38,6 +39,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     JacG = RG*UG;
     JacL = RL*UL;
 
+    % the constant term of L1,...,Lk
     Lc = RL*ones(ik,1);
     Newtoniteration = 0;
 
@@ -125,7 +127,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         while t <= 1 - h%-hmax
             vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
 
-            DeltaEulorStep = Jac\(-vEulor); % "-" or not?
+            DeltaEulorStep = Jac\(-vEulor);
 
             % update S and t
             S = mat2cell(cell2mat(S) + h*DeltaEulorStep,[n,k*ones(1,k)],1);

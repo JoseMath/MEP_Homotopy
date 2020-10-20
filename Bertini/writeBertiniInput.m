@@ -4,7 +4,7 @@ function writeBertiniInput(Str1,Str2,A,L,G,varargin)
 % A: coefficient matrices
 % L: a list of k (k-1)-by-k matrices (L1,L2,...,Lk), constraints on lambdas
 % so that Li(lambdai) = 1
-% G: a list of (k-1) k-by-k matrices (G1,G2,...,G(k-1)), constraints on
+% G: a list of k (k-1)-by-k(k-1) matrices (G1,G2,...,Gk), constraints on
 % lambda(i+1) - lambda(i)
 
 id = fullfile(Str1, Str2);
@@ -64,16 +64,18 @@ for i = 1:k
     for t = 1:k-1
         fprintf(fid, ['linearL' num2str(t+(i-1)*(k-1)) ' = ((lam' num2str(i) 'v1)*(' num2str(L{i}(t,1),'%10.15e') '+' num2str(L{i}(t,1),'%10.15e') '*ii)']);
         for j = 2:k
-            fprintf(fid, ['+(lam' num2str(i) 'v' num2str(j) ')*(' num2str(L{i}(t,j),'%10.15e') '+' num2str(L{i}(t,j),'%10.15e') '*ii)']);
+            fprintf(fid, ['+(lam' num2str(i) 'v' num2str(j) ')*(' num2str(real(L{i}(t,j)),'%10.15e') '+' num2str(imag(L{i}(t,j)),'%10.15e') '*ii)']);
         end
         fprintf(fid, [')-1 ;' '\n\n']);
     end
 end
-for i = 1:k-1
-    for t = 1:k
-        fprintf(fid, ['linearG' num2str(t+(i-1)*k) '= ((' num2str(G{i}(t,1),'%10.15e') '+' num2str(G{i}(t,1),'%10.15e') '*ii)*(lam' num2str(i) 'v1-lam' num2str(i+1) 'v1)' ]);
-        for j = 2:k
-            fprintf(fid, ['+(' num2str(G{i}(t,j),'%10.15e') '+' num2str(G{i}(t,j),'%10.15e') '*ii)*(lam' num2str(i) 'v' num2str(j) '-lam' num2str(i+1) 'v' num2str(j) ')']);
+for i = 1:k
+    for t = 1:k-1
+        fprintf(fid, ['linearG' num2str(t+(i-1)*(k-1)) '= ( 0 ']);
+        for j1 = 1:k-1
+            for j2 = 1:k                
+                fprintf(fid, ['+(' num2str(real(G{i}(t,(j1-1)*k+j2)),'%10.15e') '+' num2str(imag(G{i}(t,(j1-1)*k+j2)),'%10.15e') '*ii)*(lam' num2str(j1) 'v' num2str(j2) '-lam' num2str(j1+1) 'v' num2str(j2) ')']);                
+            end
         end
         fprintf(fid, [') ;' '\n\n']);
     end

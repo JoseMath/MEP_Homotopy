@@ -1,5 +1,5 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A)
-    % This is the ordinary version of the fiber product homotopy.    
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy(A)
+    % This is the parallelizable version of the fiber product homotopy.    
     %
     % Params:
     %   A                   - k by (k+1) cell, the matrix coefficients of the MEP.
@@ -12,12 +12,8 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     %   NumNewtonEachPath   - 1 by n_path array, total number of Newton steps of each path.
     %   LastNewton          - 1 by n_path array, the number of Newton steps of each path near the target system.
     %   JacG                - k(k-1) by k^2 cell, the coefficient matrix of the G.
-    %   C                   - 1 by k cell, the linear constraints on eigenvectors.       
+    %   C                   - 1 by k cell, the linear constraints on eigenvectors.                     
 
-    warning('off', 'MATLAB:illConditionedMatrix')
-    warning('off', 'MATLAB:singularMatrix')
-    warning('off', 'MATLAB:nearlySingularMatrix')
-    
     %% debugDisp is set to 1 when debugging
     debugDisp = 0;
 
@@ -55,7 +51,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
 
     % the constant term of L1,...,Lk
     Lc = RL*ones(ik,1);
-
+    
     % linear constraints on eigenvectors, i.e, c1,...ck
     C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
     CBlock = [blkdiag(C{:}),zeros(k,k^2)];
@@ -84,20 +80,16 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         [V, D] = extract_intrinsic_part(GA, GB);
         m(i) = length(D);
 
-        if debugDisp==1 
-            disp(size(V));
-            disp(size(D));
-        end
-
         ScaleEigenVector = C{i}*V;
         V = V./repmat(ScaleEigenVector,n(i),1);
         SEigenVector{i} = V;   % n(i) by m(i) square matrix
         SEigenValue{i} = diag(D);
     end
 
-    disp(m)
+    if debugDisp==1
+        disp(m)
+    end
 
-    S = cell(2*k,1);
 
     % loop over all possible paths
     loop = cell(k,1);
@@ -120,12 +112,17 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     TimeEachPath = 1:pn;
     LastNewton = 1:pn;
     NumNewtonEachPath = 1:pn;
-
-
+    
+    
     % Naive Method
-    for index = 1:size(Loop, 2)
+    parfor index = 1:size(Loop, 2)
         path = Loop(:,index);
         
+        warning('off', 'MATLAB:illConditionedMatrix')
+        warning('off', 'MATLAB:singularMatrix')
+        warning('off', 'MATLAB:nearlySingularMatrix')
+        
+        S = cell(2*k,1);
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
             S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i};
@@ -140,11 +137,11 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         Jac = [JacH;CBlock;zeros(ik,sumn),JacL];
     
         tic;
-        while t <= 1 - h%-hmax
+        while t <= 1 - h && sum(sum(isnan(cell2mat(S))))==0 %-hmax
             vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
 
-            DeltaEulorStep = Jac\(-vEulor);
-            
+            DeltaEulorStep = Jac\(-vEulor); % "-" or not?
+
             % update S and t
             S = mat2cell(cell2mat(S) + h*DeltaEulorStep,[n,k*ones(1,k)],1);
             t = t + h;
@@ -163,7 +160,6 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
             Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
             DeltaNewtonStep = Jac\(-vNewton);
-            Newtoniteration = Newtoniteration + 1;
             S = mat2cell(cell2mat(S) + DeltaNewtonStep,[n,k*ones(1,k)],1);
 
             [JacTL,JacTR] = EvaluateHi(k,A,S,n);
@@ -171,11 +167,10 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;JacM*cell2mat(S((k+1):2*k))-ML];
                 
             
-            while NumberNewton < 150 && norm(DeltaNewtonStep,inf) >= 10^-9
+            while NumberNewton < 150 && norm(DeltaNewtonStep,inf) >= 10^-9 && sum(sum(isnan(cell2mat(S))))==0
                 JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
                 Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
                 DeltaNewtonStep = Jac\(-vNewton);
-                Newtoniteration = Newtoniteration + 1;
                 S = mat2cell(cell2mat(S) + DeltaNewtonStep,[n,k*ones(1,k)],1);
 
                 [JacTL,JacTR] = EvaluateHi(k,A,S,n);
@@ -193,9 +188,9 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             end
         end
         Newtoniteration = Newtoniteration + NumberNewton;
-
+      
         % one more step when t gets larger than 1
-        if t < 1 
+        if t < 1 && sum(sum(isnan(cell2mat(S))))==0
             JacM = (1-t)*JacL+t*JacG;
             Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
             vEulor = [zeros(sumn+k,1);JD*cell2mat(S((k+1):(2*k)))+Lc];
@@ -217,7 +212,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;RJacM];
                         
-            while NumberNewton < EndpointN && norm(DeltaEulorStep,inf) >= 10^-9  %EndpointN
+            while NumberNewton < EndpointN && norm(DeltaEulorStep,inf) >= 10^-9 && sum(sum(isnan(cell2mat(S))))==0 %EndpointN
                 JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
                 Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
                 DeltaNewtonStep = Jac\(-vNewton);

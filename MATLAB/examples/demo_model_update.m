@@ -41,9 +41,24 @@ I = eye(n);
 s1 = 2;
 s2 = 3;
 
-% we solve a singular two-parameter eigenvalue problem
+%% Solve the singular two-parameter eigenvalue problem by MultiParEig package
+tic
 opts.singular = 1; 
 [lambda,mu] = twopareig(A-s1*I,B,C,A-s2*I,B,C,opts);
+disp(toc)
 
 A = {A-s1*I,B,C;A-s2*I,B,C};
+k = 2;
+
+% calculate the backward error
+EigenValue = [lambda,mu]; EigenValue = mat2cell(EigenValue, ones(length(lambda),1), k);        
+EigenVector = [X1',X2']; EigenVector = mat2cell(EigenVector, ones(length(lambda),1), ones(k,1)*n); EigenVector=cellfun(@transpose,EigenVector,'UniformOutput',false);
+[MaxRelError_delta,RelError_delta,Position_delta,ri_delta,thetai_delta] = RBackwardError(EigenValue,EigenVector,A);  
+
+
+%% Solve the singular two-parameter eigenvalue problem by fiber product homotopy method
+tic
 [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C] = FiberHomotopy(A);
+disp(toc)
+% calculate the backward error
+[MaxRelError_fiber,RelError_fiber,Position_fiber,ri_fiber,thetai_fiber] = RBackwardError(EigenValue,EigenVector,A);

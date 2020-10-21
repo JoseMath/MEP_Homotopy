@@ -58,7 +58,7 @@ EigenVector = [X1',X2']; EigenVector = mat2cell(EigenVector, ones(length(lambda)
 
 %% Solve the singular two-parameter eigenvalue problem by fiber product homotopy method
 tic
-[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C] = FiberHomotopy(A);
+[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy(A);
 disp(toc)
 % calculate the backward error
 [MaxRelError_fiber,RelError_fiber,Position_fiber,ri_fiber,thetai_fiber] = RBackwardError(EigenValue,EigenVector,A);

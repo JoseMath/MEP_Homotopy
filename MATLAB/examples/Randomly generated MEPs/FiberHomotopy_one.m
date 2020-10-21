@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A, opts)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy(A, opts)
     % This is the parallelizable version of the fiber product homotopy that only tracks the first path.    
     %
     % Params:

@@ -88,4 +88,4 @@ R(15:48,15:48) = eye(34);
 %% The above codes are from MultiParEig with license in the current folder
 
 A = {P,-Q,-R;conj(P),-conj(Q),-conj(R)}
-[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A)
+[EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,~,~,~,~] = FiberHomotopy(A)

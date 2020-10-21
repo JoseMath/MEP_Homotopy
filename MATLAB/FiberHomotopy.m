@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A, opts)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy(A, opts)
     % This is the ordinary version of the fiber product homotopy.    
     %
     % Params:
@@ -150,6 +150,11 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     for index = 1:size(Loop, 2)
         path = Loop(:,index);
         
+        warning('off', 'MATLAB:illConditionedMatrix')
+        warning('off', 'MATLAB:singularMatrix')
+        warning('off', 'MATLAB:nearlySingularMatrix')
+        
+        S = cell(2*k,1);
         for i = 1:k
             S{i} = SEigenVector{i}(:,path(i));
             S{k+i} = nCell{i}*SEigenValue{i}(path(i))+sCell{i};

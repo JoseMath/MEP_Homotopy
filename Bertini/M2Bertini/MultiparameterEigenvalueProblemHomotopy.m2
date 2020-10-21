@@ -311,6 +311,9 @@ end
   
   
   restart
+path=prepend("/Users/jo/Documents/GoodGit/MEP_Homotopy/Bertini/M2Bertini",path)
+needsPackage"MultiparameterEigenvalueProblemHomotopy"
+
 loadPackage("MultiparameterEigenvalueProblemHomotopy",Reload=>true)
 printingPrecision=100
 --Simple case.

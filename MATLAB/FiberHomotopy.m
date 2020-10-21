@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewton,JacG,C,Newtoniteration] = FiberHomotopy(A, opts)
     % This is the ordinary version of the fiber product homotopy.    
     %
     % Params:
@@ -14,10 +14,9 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     %   JacG                - k(k-1) by k^2 cell, the coefficient matrix of the G.
     %   C                   - 1 by k cell, the linear constraints on eigenvectors.       
 
-    warning('off', 'MATLAB:illConditionedMatrix')
-    warning('off', 'MATLAB:singularMatrix')
-    warning('off', 'MATLAB:nearlySingularMatrix')
-    
+    % Validate number of input parameters
+    narginchk(1, 2);
+
     %% debugDisp is set to 1 when debugging
     debugDisp = 0;
 
@@ -35,11 +34,36 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         disp(k);
         disp(n);
     end
-
-    %% EndpointN is the number of Newton iterations at the endpoint. 
-    %EndpointN = k*(max(n)+5);
-    %EndpointN = max(20,EndpointN);
-    EndpointN=5;
+    
+    % Analyse user supplied options, if any.
+    if nargin < 2, opts = []; end
+    if ~isfield(opts,'tracker'), opts.tracker = 'default'; end
+    switch(opts.tracker)
+        case 'default' 
+            EndpointN = 20; % the number of Newton iterations at the endpoint.         
+            NormRes = Inf; % the kinds of norm for the residual
+            EpsNormRes = 1e-8; % maximum value of norm of the residual required to obtain
+            MinNumberNewtonRetain = 3; % minimum number of Newton iterations to retain the same step size h
+            MaxNumberNewtonRetain = 5; % maximum number of Newton iterations to retain the same step size h
+        case 'fast' 
+            EndpointN = 5;
+            NormRes = 2;
+            EpsNormRes = 1e-8;
+            MinNumberNewtonRetain = 3;
+            MaxNumberNewtonRetain = 5;
+        case 'conservative' 
+            EndpointN = max(20, k*(max(n)+5));
+            NormRes = Inf;
+            EpsNormRes = 1e-9;
+            MinNumberNewtonRetain = 3;
+            MaxNumberNewtonRetain = 8;
+        otherwise
+            error('Invalid tracker\n');        
+    end
+    
+    warning('off', 'MATLAB:illConditionedMatrix')
+    warning('off', 'MATLAB:singularMatrix')
+    warning('off', 'MATLAB:nearlySingularMatrix')    
 
     %% Compute JacG, JacL, Lc from randomly generated UG, RG, UL, RL
     % G_i(lambda_i) = JacG_i * lambda_i
@@ -75,7 +99,6 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     for i = 1:k
         GA = A{i,1};
         GB = 0;
-        %option 1
         for j = 1:k
             GA = GA - A{i,j+1}*sCell{i}(j);
             GB = GB + A{i,j+1}*nCell{i}(j);
@@ -95,7 +118,9 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
         SEigenValue{i} = diag(D);
     end
 
-    disp(m)
+    if debugDisp==1 
+        disp(m)
+    end
 
     S = cell(2*k,1);
 
@@ -122,7 +147,6 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
     NumNewtonEachPath = 1:pn;
 
 
-    % Naive Method
     for index = 1:size(Loop, 2)
         path = Loop(:,index);
         
@@ -155,7 +179,6 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             NumberNewton = 1;
 
             % Newton step
-            % Naive way
             EVector = cell2mat(S(1:k));
             RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;RJacM];
@@ -171,7 +194,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;JacM*cell2mat(S((k+1):2*k))-ML];
                 
             
-            while NumberNewton < 150 && norm(DeltaNewtonStep,inf) >= 10^-9
+            while NumberNewton < 150 && norm(DeltaNewtonStep,NormRes) >= EpsNormRes
                 JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
                 Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
                 DeltaNewtonStep = Jac\(-vNewton);
@@ -184,10 +207,10 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
                 NumberNewton = NumberNewton + 1;
             end
 
-            if NumberNewton <= 2 && h <= hmax/2
+            if NumberNewton < MinNumberNewtonRetain && h <= hmax/2
                 h = h*2;
             else
-                if NumberNewton == 8 && h >= hmin*2
+                if NumberNewton == MaxNumberNewtonRetain && h >= hmin*2
                     h = h/2;
                 end
             end
@@ -212,12 +235,11 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,LastNewto
             NumberNewton = 1;
         
             % Newton step
-            % Naive way
             EVector = cell2mat(S(1:k));
             RJacM = JacM*cell2mat(S((k+1):(2*k)))-ML;
             vNewton = [blkdiag(JacTL{:})*EVector;CBlockDiag*EVector-Eterm;RJacM];
                         
-            while NumberNewton < EndpointN && norm(DeltaEulorStep,inf) >= 10^-9  %EndpointN
+            while NumberNewton < EndpointN && norm(DeltaEulorStep,NormRes) >= EpsNormRes
                 JacH = [blkdiag(JacTL{:}),blkdiag(JacTR{:})];
                 Jac = [JacH;CBlock;zeros(ik,sumn),JacM];
                 DeltaNewtonStep = Jac\(-vNewton);

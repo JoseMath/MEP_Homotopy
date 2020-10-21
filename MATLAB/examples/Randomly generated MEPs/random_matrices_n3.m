@@ -58,7 +58,7 @@ for i = 1:length(k_list)
     for n_simulation = 1:10
         A = random_matrices{i, n_simulation, 1};
         tic;
-        [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath{i,n_simulation},NumNewtonEachPath{i,n_simulation},LastNewton,~,~] = FiberHomotopy(A);
+        [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath{i,n_simulation},NumNewtonEachPath{i,n_simulation},LastNewton,~,~] = FiberHomotopy(A, struct('tracker', 'fast'));
         t{i,n_simulation} = toc;
         
         [MaxRelError{i,n_simulation},RelError{i,n_simulation},Position{i,n_simulation},ri{i,n_simulation},thetai{i,n_simulation}] = RBackwardError(EigenValue,EigenVector,A);                     

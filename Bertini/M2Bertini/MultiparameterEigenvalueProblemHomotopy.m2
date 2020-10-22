@@ -44,7 +44,8 @@ export {
     "runStartMultiparameterEigenvalueProblem",
     "getStartLines",
     "writeStartSolutionsFiberProductHomotopy",
-    "mepFiberProductHomotopy"
+    "mepFiberProductHomotopy",
+    "diagonalCoefficientHomotopy"
             }
 
 mepKeys={
@@ -282,6 +283,108 @@ mepFiberProductHomotopy(MultiparameterEigenvalueProblem):=mepH->(
     )
 
 
+
+-*
+PolynomialMatrix=new Type of MutableHashTable 
+new PolynomialMatrix := (X)->new MutableHashTable from {
+    "MatrixCoefficients"=>null,
+    "SupportPolynomial"=>null,
+    "ExtrinsicDimension"=>null,
+    "IntrinsicDimension"=>null}
+*-
+
+diagonalCoefficientHomotopy = method(Options=>{})
+diagonalCoefficientHomotopy(List,List) := o -> (allD,allH) -> (
+    extDim := allH/first/numrows;
+    k := #allH;
+    lam := symbol lam;    
+    dhT := symbol dhT;    
+    R := (ring allH#0#0)[lam_1..lam_k,dhT];
+    allD1:=allD/entries/first/diagonalMatrix/(i->sub(i,R));
+    allD2:=allD/entries/last/diagonalMatrix/(i->sub(i,R));
+    mons:={1}|drop(gens R,-1);
+    startMatrices := apply(#allH, 
+	h -> (1-dhT)*(allD1#h) + (1-dhT)*lam_(h+1)*allD2#h);
+    targetMatrices := apply(#allH, 
+	h -> dhT*sum(allH#h,mons,(a,b)->b*sub(a,R)));
+    sys:= startMatrices+targetMatrices;
+    xVector :=(i,j)->apply(extDim#i,a->"x"|i|"v"|a);
+    win:=apply(#sys,m->apply(entries sys#m, r-> makeB'Section(r,B'NumberCoefficients=>xVector(m,#r))));
+--    win = flatten win/(i->i#B'SectionString);
+    dir :=temporaryFileName();
+    mkdir dir;
+    makeB'InputFile(dir,
+	AffVariableGroup=>toList (lam_1..lam_k),
+	HomVariableGroup=>apply(#extDim,i->xVector(i,extDim#i)),
+    	ParameterGroup=>{last gens R},
+	B'Polynomials=>flatten win,
+	BertiniInputConfiguration=>{"ParameterHomotopy"=>2}
+	);
+    S := apply(allD,D1->set apply(numcols D1,j->{
+		j => -((entries(D1_j))#0)/((entries(D1_j))#1)
+		}
+	    )
+	);
+    cartesianProduct := (A,B)->  (toList (A**B))/toList/flatten//set;
+    S = toList fold(cartesianProduct,S);
+    unitVector := (a,b) -> apply(b,i->if i == a then 1 else 0);
+    makeSolution := s->(
+    	p:={};
+    	scan(s/first,extDim,(a,b)->p=p|unitVector(a,b));
+    	p=p|toList(s/last);
+    	p);
+    S=S/makeSolution;
+    writeParameterFile(dir,{0},NameParameterFile=>"start_parameters");
+    writeParameterFile(dir,{1},NameParameterFile=>"final_parameters");
+    writeStartFile(dir,S);
+    runBertini(dir);
+    readFile(dir)    
+    )
+
+-*
+restart
+path=prepend("/Users/jo/Documents/GoodGit/MEP_Homotopy/Bertini/M2Bertini",path)
+needsPackage"MultiparameterEigenvalueProblemHomotopy"
+
+randMatrix = (i,j)-> matrix for i to i-1 list for j to j-1 list random CC
+--Start system
+D1 = randMatrix(2,3)
+D2 = randMatrix(2,4)
+
+--Target system
+H1 = apply(2+1,i->randMatrix(3,3))
+H2 = apply(2+1,i->randMatrix(4,4))
+allD={D1,D2}--specify a start system by taking the first row to be a diagonal matrix of constants and the second row is diagonal matrix multiplied by a lambda. 
+allH={H1,H2}
+
+--Solve
+diagonalCoefficientHomotopy(allD,{H1,H2})
+*-
+
+-*
+Experiment setup
+restart
+path=prepend("/Users/jo/Documents/GoodGit/MEP_Homotopy/Bertini/M2Bertini",path)
+needsPackage"MultiparameterEigenvalueProblemHomotopy"
+
+extDim={5,5,5}
+randMatrix = (i,j)-> matrix for i to i-1 list for j to j-1 list random CC
+--Start system
+allD=apply(#extDim,i->randMatrix(2,extDim#i))--specify a start system by taking the first row to be a diagonal matrix of constants and the second row is diagonal matrix multiplied by a lambda. 
+
+--Target system
+allH = apply(extDim,n->apply(#extDim+1,i->randMatrix(n,n)))
+#allH
+--Solve
+diagonalCoefficientHomotopy(allD,allH)
+
+*-
+
+--PolynomialMatrix + PolynomialMatrix := (x,y)->
+
+
+
+
  
 --##########################################################################--
 -- INTERNAL METHODS
@@ -318,11 +421,12 @@ loadPackage("MultiparameterEigenvalueProblemHomotopy",Reload=>true)
 printingPrecision=100
 --Simple case.
 mepH=newMultiparameterEigenvalueProblem({7,6},"GenericExtrinsic")    
+peek mepH
 theDir=temporaryFileName()
 mkdir theDir
 mepH#"Directory"=theDir
-mepFiberProductHomotopy(mepH)
-7+7+2^2
+sols = mepFiberProductHomotopy(mepH)
+
 
 "/Users/jo/Desktop/Dump"
 "nonsingular_solutions"
@@ -451,3 +555,9 @@ loadPackage"Bertini"
 (ideal(matrix{{lam,1},{0,lam}}*transpose matrix{{x1,x2}}))_*//bertiniPosDimSolve
 nv=oo
 peek nv#2#1
+
+
+R=QQ[a1,a2,b1,b2,t]
+H1= (1-t)*(2*a1+3*a2+7)    + 19*t*(a1-b1)+26*t*(a2-b2)
+H2= (1-t)*(11*a1+13*a2+17) + 23*t*(a2-b2)+123*t*(a1-b1)
+eliminate({a2},ideal(H1,H2))

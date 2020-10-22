@@ -32,7 +32,8 @@ for i = 1:length(n_list)
         A = randn(k*n,(k+1)*n) + 1i*randn(k*n,(k+1)*n);
         A = mat2cell(A, n*ones(k,1), n*ones(k+1,1));
         
-        tic;        [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath{i,n_simulation},NumNewtonEachPath{i,n_simulation},LastNewton,~,~] = FiberHomotopy_one(A, struct('tracker', 'fast'));
+        tic;        
+        [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath{i,n_simulation},NumNewtonEachPath{i,n_simulation},LastNewton,~,~] = FiberHomotopy_one(A, struct('tracker', 'fast'));
         t{i,n_simulation} = toc;
         
         [MaxRelError{i,n_simulation},RelError{i,n_simulation},Position{i,n_simulation},ri{i,n_simulation},thetai{i,n_simulation}] = RBackwardError(EigenValue,EigenVector,A);                     

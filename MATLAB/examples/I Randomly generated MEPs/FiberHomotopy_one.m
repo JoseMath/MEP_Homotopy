@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy(A, opts)
+function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = FiberHomotopy_one(A, opts)
     % This is the parallelizable version of the fiber product homotopy that only tracks the first path.    
     %
     % Params:
@@ -147,7 +147,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
     NumNewtonEachPath = 1:pn;
 
 
-    parfor index = 1:size(Loop, 2)
+    for index = 1:size(Loop, 2)
         path = Loop(:,index);
         
         for i = 1:k

@@ -17,10 +17,10 @@ save('random_matrices_k3_large_n','random_matrices')
 
 
 %% run the fiber product homotopy method
-t = cell(length(n_list),10);
-MaxRelError = cell(length(n_list),10);
-RelError = cell(length(n_list),10);
-Position = cell(length(n_list),10);
+t = cell(length(n_list),100);
+MaxRelError = cell(length(n_list),100);
+RelError = cell(length(n_list),100);
+Position = cell(length(n_list),100);
 ri = cell(length(n_list),100);
 thetai = cell(length(n_list),100);
 NumNewtonEachPath = cell(length(n_list),100);

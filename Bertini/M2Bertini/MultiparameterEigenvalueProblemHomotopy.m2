@@ -153,7 +153,7 @@ writeMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem):=(mepH)->(
 		HomVariableGroup=>{xv},
 		AffVariableGroup=>{drop(gens R,1)},
 		B'Constants=>{toString first gens R=>1},
-		B'Configs=>{"PrintPathProgress"=>100})		
+		BertiniInputConfiguration=>{"PrintPathProgress"=>100})		
 		));
     ---Now we write the Fiberproduct homotopy part. 	    
     allLam:=apply(kParameters,i->apply(kParameters+1,j->"lam"|i+1|"v"|j));
@@ -212,7 +212,7 @@ writeMultiparameterEigenvalueProblem(MultiparameterEigenvalueProblem):=(mepH)->(
     	    	ParameterGroup=>{"fpT"},
 		B'Constants=>bConstant,
     	    	B'Functions=>bFunction,
-		B'Configs=>bcFP));
+		BertiniInputConfiguration=>bcFP));
 
 	
 runStartMultiparameterEigenvalueProblem=method()
@@ -311,10 +311,15 @@ end
   
   
   restart
+path=prepend("/Users/jo/Documents/GoodGit/MEP_Homotopy/Bertini/M2Bertini",path)
+needsPackage"MultiparameterEigenvalueProblemHomotopy"
+
 loadPackage("MultiparameterEigenvalueProblemHomotopy",Reload=>true)
 printingPrecision=100
 --Simple case.
 mepH=newMultiparameterEigenvalueProblem({7,6},"GenericExtrinsic")    
+theDir=temporaryFileName()
+mkdir theDir
 mepH#"Directory"=theDir
 mepFiberProductHomotopy(mepH)
 7+7+2^2

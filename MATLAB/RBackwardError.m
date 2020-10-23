@@ -11,7 +11,7 @@ function [MaxRelError,RelError,Position,ri,thetai] = RBackwardError(EigenValue,E
     %    thetai      : n_sols by k matrix, ||A_{i0}||+sum_k |lambda_j|*||A_{ij}||
     
     k = size(A,1);
-    n_sols = length(EigenValue);
+    n_sols = size(EigenValue, 1);
 
     RelError = zeros(n_sols,k);
     MaxRelError = 1:n_sols;

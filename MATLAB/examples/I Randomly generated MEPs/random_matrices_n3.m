@@ -28,7 +28,7 @@ thetai = cell(length(k_list),10);
 for i = 1:length(k_list)
     k = k_list(i);
     for n_simulation = 1:10
-        A = random_matrices{i, n_simulation, 1};
+        A = random_matrices{i, n_simulation};
         tic;
         [lambda,X,~] = multipareig(A);
         t{i,n_simulation} = toc;

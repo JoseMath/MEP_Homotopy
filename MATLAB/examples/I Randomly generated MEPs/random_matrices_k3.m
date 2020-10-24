@@ -35,8 +35,8 @@ for i = 1:length(n_list)
         [lambda,mu,eta,X1,X2,X3,~,~,~] = threepareig(A{1,1},A{1,2},A{1,3},A{1,4},A{2,1},A{2,2},A{2,3},A{2,4},A{3,1},A{3,2},A{3,3},A{3,4});
         t{i,n_simulation} = toc;
         
-        EigenValue{i,n_simulation} = [lambda,mu,eta]; EigenValue{i,n_simulation} = mat2cell(EigenValue{i,n_simulation}, ones(length(lambda),1), k);        
-        EigenVector = [X1.',X2.',X3.']; EigenVector = mat2cell(EigenVector, ones(length(lambda),1), ones(k,1)*n); EigenVector=cellfun(@transpose,EigenVector,'UniformOutput',false);
+        EigenValue{i,n_simulation} = [lambda,mu,eta]; EigenValue{i,n_simulation} = mat2cell(EigenValue{i,n_simulation}, ones(size(lambda,1),1), k);        
+        EigenVector = [X1.',X2.',X3.']; EigenVector = mat2cell(EigenVector, ones(size(lambda,1),1), ones(k,1)*n); EigenVector=cellfun(@transpose,EigenVector,'UniformOutput',false);
         [MaxRelError{i,n_simulation},RelError{i,n_simulation},Position{i,n_simulation},ri{i,n_simulation},thetai{i,n_simulation}] = RBackwardError(EigenValue{i,n_simulation},EigenVector,A);                     
     end
 end

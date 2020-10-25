@@ -60,6 +60,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
         otherwise
             error('Invalid tracker\n');        
     end
+    if isfield(opts,'EndpointN'), EndpointN = opts.EndpointN; end
 
     %% Compute JacG, JacL, Lc from randomly generated UG, RG, UL, RL
     % G_i(lambda_i) = JacG_i * lambda_i

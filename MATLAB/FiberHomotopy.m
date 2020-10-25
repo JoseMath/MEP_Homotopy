@@ -60,6 +60,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
         otherwise
             error('Invalid tracker\n');        
     end
+    if isfield(opts,'EndpointN'), EndpointN = opts.EndpointN; end
     
     warning('off', 'MATLAB:illConditionedMatrix')
     warning('off', 'MATLAB:singularMatrix')

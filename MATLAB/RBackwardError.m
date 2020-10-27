@@ -38,14 +38,6 @@ function [MaxRelError,RelError,Position,ri,thetai] = RBackwardError(EigenValue,E
             E(j) = norm(r)/N;
             RelError(i,j) = E(j);
         end
-        % exclude paths that converge to Inf or do not converge, in terms of infinity norm
-        if max(abs(EValue))>1e6 || max(max(abs(cell2mat(EVector))))>1e6 || max(ri_inf(i,:))>1.0
-            ri(i,:) = nan;
-        end
         [MaxRelError(i),Position(i)] = max(E);
     end
-    
-    MaxRelError(isnan(ri(:,1))) = nan;
-    RelError(isnan(ri(:,1)),:) = nan;
-    Position(isnan(ri(:,1))) = nan;
-    thetai(isnan(ri(:,1)),:) = nan;
+end

@@ -6,18 +6,20 @@ function [JacTL,JacTR] = EvaluateHi(k,A,S,n)
 % C is the linear constraint cell on eigenvectors
 % the output would be a 1 by k cell array; the ci (linear constraints on 
 % eigenvectors are also attached in the second row)
-JacTL = cell(1,k);
-JacTR = cell(1,k);
-for i = 1:k
-    JacTL{i} = A{i,1};
-    for j = 1:k
-        JacTL{i} = JacTL{i} - A{i,j+1}*S{k+i}(j);
+% JacTL  - diag(H1(lambda1), ..., Hk(lambdak))
+% JacTR  - diag(B1(x1),      ..., Bk(xk)     )
+    JacTL = cell(1,k);
+    JacTR = cell(1,k);
+    for i = 1:k
+        JacTL{i} = A{i,1};
+        for j = 1:k
+            JacTL{i} = JacTL{i} - A{i,j+1}*S{k+i}(j);
+        end
+
+        R = zeros(n(i),k);
+        for j = 1:k
+            R(:,j) = -A{i,j+1}*S{i};
+        end
+        JacTR{i} = R;
     end
-    
-    R = zeros(n(i),k);
-    for j = 1:k
-        R(:,j) = -A{i,j+1}*S{i};
-    end
-    JacTR{i} = R;
-end
 end

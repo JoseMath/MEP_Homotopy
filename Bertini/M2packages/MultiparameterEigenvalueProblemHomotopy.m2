@@ -411,8 +411,40 @@ TEST///
 
 end
   
-  
-  
+path = append(path, "/home/dujinhong/M2/")
+loadPackage("Bertini",Reload=>true,Configuration=>{"BERTINIexecutable"=>"/home/dujinhong/bertini/bin/bertini"})
+loadPackage("MultiparameterEigenvalueProblemHomotopy",Reload=>true)
+theDir = "/home/dujinhong/result/fiber/table4/15/"
+mkdir theDir
+printingPrecision=100
+
+timeFiber = for i when i < 100 list (
+    subDir = concatenate {theDir, toString(i), "//"};
+    mkdir subDir;
+    mepH=newMultiparameterEigenvalueProblem({15,15},"GenericExtrinsic");
+    mepH#"Directory"=subDir;
+
+    t1 = cpuTime();
+    writeMultiparameterEigenvalueProblem(mepH);
+    runStartMultiparameterEigenvalueProblem(mepH);
+    writeStartSolutionsFiberProductHomotopy(mepH);
+    moveB'File(mepH#"Directory","start_FPH","start",CopyB'File=>true);
+    runBertini(mepH#"Directory",NameB'InputFile=>"input_FPH");
+    readFile(mepH#"Directory");
+    t2 = cpuTime();
+    t2-t1
+)
+
+
+
+
+extDim={5,5,5}
+randMatrix = (i,j)-> matrix for i to i-1 list for j to j-1 list random CC
+allD=apply(#extDim,i->randMatrix(2,extDim#i))
+allH = apply(extDim,n->apply(#extDim+1,i->randMatrix(n,n)))
+diagonalCoefficientHomotopy(allD,allH)
+
+
   restart
 path=prepend("/Users/jo/Documents/GoodGit/MEP_Homotopy/Bertini/M2Bertini",path)
 needsPackage"MultiparameterEigenvalueProblemHomotopy"

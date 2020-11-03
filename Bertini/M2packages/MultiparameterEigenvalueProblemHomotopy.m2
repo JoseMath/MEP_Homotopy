@@ -294,7 +294,7 @@ new PolynomialMatrix := (X)->new MutableHashTable from {
 *-
 
 diagonalCoefficientHomotopy = method(Options=>{})
-diagonalCoefficientHomotopy(List,List) := o -> (allD,allH) -> (
+diagonalCoefficientHomotopy(List,List,String) := o -> (allD,allH,dir) -> (
     extDim := allH/first/numrows;
     k := #allH;
     lam := symbol lam;    
@@ -311,14 +311,14 @@ diagonalCoefficientHomotopy(List,List) := o -> (allD,allH) -> (
     xVector :=(i,j)->apply(extDim#i,a->"x"|i|"v"|a);
     win:=apply(#sys,m->apply(entries sys#m, r-> makeB'Section(r,B'NumberCoefficients=>xVector(m,#r))));
 --    win = flatten win/(i->i#B'SectionString);
-    dir :=temporaryFileName();
-    mkdir dir;
+    -- dir :=temporaryFileName();
+    -- mkdir dir;
     makeB'InputFile(dir,
-	AffVariableGroup=>toList (lam_1..lam_k),
-	HomVariableGroup=>apply(#extDim,i->xVector(i,extDim#i)),
+	    AffVariableGroup=>toList (lam_1..lam_k),
+	    HomVariableGroup=>apply(#extDim,i->xVector(i,extDim#i)),
     	ParameterGroup=>{last gens R},
-	B'Polynomials=>flatten win,
-	BertiniInputConfiguration=>{"ParameterHomotopy"=>2}
+	    B'Polynomials=>flatten win,
+	    BertiniInputConfiguration=>{"ParameterHomotopy"=>2}
 	);
     S := apply(allD,D1->set apply(numcols D1,j->{
 		j => -((entries(D1_j))#0)/((entries(D1_j))#1)
@@ -410,37 +410,10 @@ TEST///
 
 
 end
-  
-path = append(path, "/home/dujinhong/M2/")
-loadPackage("Bertini",Reload=>true,Configuration=>{"BERTINIexecutable"=>"/home/dujinhong/bertini/bin/bertini"})
-loadPackage("MultiparameterEigenvalueProblemHomotopy",Reload=>true)
-theDir = "/home/dujinhong/result/fiber/table4/15/"
-mkdir theDir
-printingPrecision=100
 
-timeFiber = for i when i < 100 list (
-    subDir = concatenate {theDir, toString(i), "//"};
-    mkdir subDir;
-    mepH=newMultiparameterEigenvalueProblem({15,15},"GenericExtrinsic");
-    mepH#"Directory"=subDir;
-
-    t1 = cpuTime();
-    writeMultiparameterEigenvalueProblem(mepH);
-    runStartMultiparameterEigenvalueProblem(mepH);
-    writeStartSolutionsFiberProductHomotopy(mepH);
-    moveB'File(mepH#"Directory","start_FPH","start",CopyB'File=>true);
-    runBertini(mepH#"Directory",NameB'InputFile=>"input_FPH");
-    readFile(mepH#"Directory");
-    t2 = cpuTime();
-    t2-t1
-)
-
-
-
-
-extDim={5,5,5}
+extDim={3,3}
 randMatrix = (i,j)-> matrix for i to i-1 list for j to j-1 list random CC
-allD=apply(#extDim,i->randMatrix(2,extDim#i))
+allD = apply(#extDim,i->randMatrix(2,extDim#i))
 allH = apply(extDim,n->apply(#extDim+1,i->randMatrix(n,n)))
 diagonalCoefficientHomotopy(allD,allH)
 

@@ -5,7 +5,7 @@ Our homotopy method tracks several copies of the eigenvalue λ; they should all 
 
 The λi1 coordinates of all eight paths for t ∈ [0.95, 1] and i = 1, 2, 3. | The λi1 coordinates of the path highlighted in the left panel for t ∈ [0, 1] and i = 1, 2, 3.
 :-------------------------:|:-------------------------:
-![1](https://raw.githubusercontent.com/JoseMath/MEP_Homotopy/master/img/eightEndPaths.png)  |  ![](https://raw.githubusercontent.com/JoseMath/MEP_Homotopy/master/img/path1.gif)
+![1](https://raw.githubusercontent.com/JoseMath/MEP_Homotopy/master/img/eightEndPaths.png)  |  ![](https://raw.githubusercontent.com/JoseMath/MEP_Homotopy/master/img/path1.png)
 
 
 

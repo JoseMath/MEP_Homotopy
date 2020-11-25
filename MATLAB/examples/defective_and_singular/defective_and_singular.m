@@ -1,5 +1,10 @@
 addpath(genpath("/Users/dujinhong/Documents/study/Lim/code/MutliParEig_2_5/MutliParEig"))
 
+
+% Two-parameter eigenvalue problem
+% A1*x = (lambda*B1+mu*C1)*x
+% A2*x = (lambda*B2+mu*C2)*x
+
 %% Case 1 - defective but not singular 
 
 
@@ -39,6 +44,6 @@ Delta0 = kron(B1,C2) - kron(C1,B2);
 ran = rank(Delta0)
 
 % extrinsic (2,2)
-% intrinsic (1,2)
+% intrinsic (,2)
 A = {A1,B1, C1;A2,B2,C2};
 intrinsic(A)

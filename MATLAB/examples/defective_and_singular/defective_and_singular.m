@@ -44,6 +44,6 @@ Delta0 = kron(B1,C2) - kron(C1,B2);
 ran = rank(Delta0)
 
 % extrinsic (2,2)
-% intrinsic (,2)
+% intrinsic (1,2)
 A = {A1,B1, C1;A2,B2,C2};
 intrinsic(A)

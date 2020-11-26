@@ -1,4 +1,4 @@
-function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewtonEachPath,LastNewton,JacG,C] = intrinsic(A, opts)
+function [m] = intrinsic(A, opts)
     % This is the ordinary version of the fiber product homotopy.    
     %
     % Params:

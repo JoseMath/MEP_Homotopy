@@ -1,15 +1,9 @@
-addpath(genpath("/Users/dujinhong/Documents/study/Lim/code/MutliParEig_2_5/MutliParEig"))
-
-
+addpath(genpath("MutliParEig"))
 % Two-parameter eigenvalue problem
 % A1*x = (lambda*B1+mu*C1)*x
 % A2*x = (lambda*B2+mu*C2)*x
 
-%% Case 1 - defective but not singular 
-
-
-
-%% Case 2 - singular but not defective
+%% Case 1 - singular but not defective
 A1 = [1  2;  3  4]; 
 B1 = [1  1; -1  1]; 
 C1 = [2  1;  5  1];
@@ -29,7 +23,7 @@ A = {A1,B1, C1;A2,B2,C2};
 intrinsic(A)
 
 
-%% Case 3 - defective and singular 
+%% Case 2 - defective and singular 
 A1 = [0  2;  1  0]; 
 B1 = [0  1; 0  0]; 
 C1 = [0  1;  0  0];

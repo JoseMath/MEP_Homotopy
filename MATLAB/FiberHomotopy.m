@@ -67,6 +67,10 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
     warning('off', 'MATLAB:nearlySingularMatrix')    
 
     %% Compute start system
+    % In theory we make the assumption that the intrinsic dimension is measured correctly. 
+    % But the intrinsic dimension can be over-estimated when the eigenvalues of an associated GEP 
+    % at infinity incorrectly classified as eigenvalues with very large modulus. When this happens, 
+    % the homotopy method method will track this start point to infinity or to a copy of an eigenpair of the MEP. 
     ik = (k-1)*k;  
     SEigenVector=cell(3,1);SEigenValue=cell(3,1);JacG=cell(3,1);JacL=cell(3,1);Lc=cell(3,1);C=cell(3,1);nCell=cell(3,1);sCell=cell(3,1);m=cell(3,1);
     for i=1:3

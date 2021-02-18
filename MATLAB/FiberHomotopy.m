@@ -66,58 +66,22 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
     warning('off', 'MATLAB:singularMatrix')
     warning('off', 'MATLAB:nearlySingularMatrix')    
 
-    %% Compute JacG, JacL, Lc from randomly generated UG, RG, UL, RL
-    % G_i(lambda_i) = JacG_i * lambda_i
-    % L_i(lambda_i) = JacL_i * lambda_i + Lc_i
-    ik = (k-1)*k;
-    UG = [eye(ik),zeros(ik,k)]-[zeros(ik,k),eye(ik)];
-    RG = randn(ik)+1i*randn(ik);
-    R = mat2cell(randn(ik,k)+1i*randn(ik,k),(k-1)*ones(1,k),k);
-    UL = blkdiag(R{:});
-    RL = randn(ik)+1i*randn(ik);
-    JacG = RG*UG;
-    JacL = RL*UL;
-
-    % the constant term of L1,...,Lk
-    Lc = RL*ones(ik,1);
-
-    % linear constraints on eigenvectors, i.e, c1,...ck
-    C = mat2cell(randn(1,sumn)+1i*randn(1,sumn),1,n);
+    %% Compute start system
+    ik = (k-1)*k;  
+    SEigenVector=cell(3,1);SEigenValue=cell(3,1);JacG=cell(3,1);JacL=cell(3,1);Lc=cell(3,1);C=cell(3,1);nCell=cell(3,1);sCell=cell(3,1);m=cell(3,1);
+    for i=1:3
+        [SEigenVector{i},SEigenValue{i}, JacG{i}, JacL{i}, Lc{i}, C{i}, nCell{i}, sCell{i}, m{i}] = get_start_system(A, n, sumn, k);
+    end
+    [max_m,max_i] = max(reshape(cell2mat(m), [k,3]), [], 2);
+    min_m = min(reshape(cell2mat(m), [k,3]), [], 2);
+    if sum(max_m-min_m)~=0       
+       SEigenVector=SEigenVector{max_i}; SEigenValue=SEigenValue{max_i}; JacG=JacG{max_i}; JacL=JacL{max_i}; Lc=Lc{max_i}; C=C{max_i}; nCell=nCell{max_i}; sCell=sCell{max_i}; m = m{max_i};
+       disp('Discrpency on estimations of intrinsic dimension.')
+       disp(['Minimum: [',num2str(min_m.'),'] Maximum: [',num2str(max_m.'),'].'])
+       disp(['Using [',num2str(m),']. This may cause extra divergent paths or paths leading to multiple copies.']) 
+    end
     CBlock = [blkdiag(C{:}),zeros(k,k^2)];
     CBlockDiag = blkdiag(C{:});
-
-    % get the solutions for the start system, i.e, solve the GEPs
-    SEigenVector = cell(k,1);
-    SEigenValue = cell(k,1);
-    s = UL\ones(ik,1);   % k^2 by 1 specific solution
-    nCell = cell(k,1);
-    for i = 1:k
-        nCell{i} = null(R{i});
-    end
-    sCell = mat2cell(s,k*ones(1,k),1);
-
-    m = zeros(size(n));  
-    for i = 1:k
-        GA = A{i,1};
-        GB = 0;
-        for j = 1:k
-            GA = GA - A{i,j+1}*sCell{i}(j);
-            GB = GB + A{i,j+1}*nCell{i}(j);
-        end
-        
-        [V, D] = extract_intrinsic_part(GA, GB);
-        m(i) = length(D);
-
-        if debugDisp==1 
-            disp(size(V));
-            disp(size(D));
-        end
-
-        ScaleEigenVector = C{i}*V;
-        V = V./repmat(ScaleEigenVector,n(i),1);
-        SEigenVector{i} = V;   % n(i) by m(i) square matrix
-        SEigenValue{i} = diag(D);
-    end
 
     if debugDisp==1 
         disp(m)

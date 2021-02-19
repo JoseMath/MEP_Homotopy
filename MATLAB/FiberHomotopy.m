@@ -79,7 +79,7 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
     max_m = max(reshape(cell2mat(m), [k,3]), [], 2);
     min_m = min(reshape(cell2mat(m), [k,3]), [], 2);
     if sum(abs(max_m-min_m))~=0       
-        [~,max_i] = max(prod(reshape(cell2mat(m), [k,3]), 1));
+        [~,max_i] = max(prod(reshape(cell2mat(m), [k,3]), 2));
         disp('Discrepancy on estimations of intrinsic dimension.')
         disp(['Minimum: [',num2str(min_m.'),'] Maximum: [',num2str(max_m.'),'].'])
         disp(['Using [',num2str(m{max_i}),']. This may cause extra divergent paths or paths leading to multiple copies.'])

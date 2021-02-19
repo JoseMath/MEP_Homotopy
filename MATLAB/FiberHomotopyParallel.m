@@ -72,14 +72,17 @@ function [EigenValue,EigenVector,SEigenValue,SEigenVector,TimeEachPath,NumNewton
     for i=1:3
         [SEigenVector{i},SEigenValue{i}, JacG{i}, JacL{i}, Lc{i}, C{i}, nCell{i}, sCell{i}, m{i}] = get_start_system(A, n, sumn, k);
     end
-    [max_m,max_i] = max(reshape(cell2mat(m), [k,3]), [], 2);
+    max_m = max(reshape(cell2mat(m), [k,3]), [], 2);
     min_m = min(reshape(cell2mat(m), [k,3]), [], 2);
-    if sum(max_m-min_m)~=0       
-       SEigenVector=SEigenVector{max_i}; SEigenValue=SEigenValue{max_i}; JacG=JacG{max_i}; JacL=JacL{max_i}; Lc=Lc{max_i}; C=C{max_i}; nCell=nCell{max_i}; sCell=sCell{max_i}; m = m{max_i};
-       disp('Discrpency on estimations of intrinsic dimension.')
-       disp(['Minimum: [',num2str(min_m.'),'] Maximum: [',num2str(max_m.'),'].'])
-       disp(['Using [',num2str(m),']. This may cause extra divergent paths or paths leading to multiple copies.']) 
+    if sum(abs(max_m-min_m))~=0       
+        [~,max_i] = max(prod(reshape(cell2mat(m), [k,3]), 1));
+        disp('Discrepancy on estimations of intrinsic dimension.')
+        disp(['Minimum: [',num2str(min_m.'),'] Maximum: [',num2str(max_m.'),'].'])
+        disp(['Using [',num2str(m{max_i}),']. This may cause extra divergent paths or paths leading to multiple copies.'])
+    else
+        max_i = 1;     
     end
+    SEigenVector=SEigenVector{max_i}; SEigenValue=SEigenValue{max_i}; JacG=JacG{max_i}; JacL=JacL{max_i}; Lc=Lc{max_i}; C=C{max_i}; nCell=nCell{max_i}; sCell=sCell{max_i}; m = m{max_i};
     CBlock = [blkdiag(C{:}),zeros(k,k^2)];
     CBlockDiag = blkdiag(C{:});
 
